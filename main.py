@@ -1,11 +1,13 @@
 """Answers the eternal question: what is better, or whose kung-foo is stronger"""
 from timeit import timeit
-#from dis import dis
+# from dis import dis
 from sys import argv
 import os
 from pathlib import Path
-#from io import StringIO
-#from contextlib import redirect_stdout
+
+
+# from io import StringIO
+# from contextlib import redirect_stdout
 
 
 def disclaimer():
@@ -13,7 +15,7 @@ def disclaimer():
     print(f'{"!!!DISCLAIMER!!!":^60}\n',
           '\tThe main purpose of holywar is to entertain people rather \n',
           'than arguing about which one of code block or programing \n',
-          'tecnique is better. It is strongly recommended to consider \n',
+          'technique is better. It is strongly recommended to consider \n',
           'that actual code is being executed during holywar so use only\n',
           'trusted sources of rival codes and under any circumstances \n',
           'DO NOT upload rival codes from the Internet especially from \n',
@@ -44,16 +46,24 @@ def usage(error=''):
 
 
 def demo():
-    """Runs demonstration of holywar with rivals 8.2 // 1 and int(8.2)"""
-    holywar('8.2 // 1', 'int(8.2)', mode='no-rules')
+    """Runs demonstration of holy-war with rivals 8.2 // 1 and int(8.2)"""
+    holywar(['8.2 // 1', 'int(8.2)'], mode='no-rules')
 
 
-def holywar(*contestants, mode='no-rules'):
+def holywar(rivals, mode='no-rules'):
     """Does its main job, computes, gathers, displays"""
-    for contst in contestants:
-        print(contst)
+    #results = {}
+    if len(rivals) == 1:
+        print(f'{"!!!!Flawless Brutal Fatality!!!!":^60}')
+        rival_txt = rivals[0] if len(rivals[0]) <= 15 \
+            else rivals[0][:15]+'...'
+        print(f'Rival #1: "{rival_txt}" wins! '
+              + 'Condition 1st place from 1 contestant!')
+        return 0
+    for code in rivals:
+        print(code)
     print(mode)
-    # with open(stdout.buffer.fileno())
+    return 0
 
 
 def validate_rival(rival):
@@ -64,7 +74,7 @@ def validate_rival(rival):
     try:
         timeit(rival, number=1)
     except SyntaxError:
-        rival_txt = rival if len(rival) <= 12 else rival[:12]+'...'
+        rival_txt = rival if len(rival) <= 12 else rival[:12] + '...'
         error = f'"{rival_txt}" is not a valid rival code'
     if error == '':
         return rival, error
@@ -77,7 +87,7 @@ def validate_rival(rival):
             rival = pretender
             error = ''
         except SyntaxError:
-            error = f'{error.replace("not", "neither")},'\
+            error = f'{error.replace("not", "neither")},' \
                     + ' nor a file with a valid code'
             rival = ''
 
@@ -86,7 +96,7 @@ def validate_rival(rival):
 
 def main():
     """Provides initial args check, prepares parameters and rivals,
-    passes them to holywar"""
+    passes them to holy-war"""
     disclaimer()
     mode = 'no-rules'
     rivals = []
