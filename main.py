@@ -1,14 +1,13 @@
 """Answers the eternal question: what is better, or whose kung-foo is stronger"""
 from timeit import timeit
-# from dis import dis
+from dis import dis
 from sys import argv
 import os
 from pathlib import Path
-
-
-# from io import StringIO
-# from contextlib import redirect_stdout
-
+from io import StringIO
+from contextlib import redirect_stdout
+from rich.console import Console
+from rich.table import Table
 
 def disclaimer():
     """Prints disclaimer"""
@@ -52,7 +51,7 @@ def demo():
 
 def holywar(rivals, mode='no-rules'):
     """Does its main job, computes, gathers, displays"""
-    #results = {}
+    results = []
     if len(rivals) == 1:
         print(f'{"!!!!Flawless Brutal Fatality!!!!":^60}')
         rival_txt = rivals[0] if len(rivals[0]) <= 15 \
@@ -60,10 +59,45 @@ def holywar(rivals, mode='no-rules'):
         print(f'Rival #1: "{rival_txt}" wins! '
               + 'Condition 1st place from 1 contestant!')
         return 0
+    rival_ind = 1
     for code in rivals:
-        print(code)
-    print(mode)
+        rival_txt = code if len(code) <= 12 else code[:12] + '...'
+        rival_title = f'Rival #{rival_ind}'
+        with redirect_stdout(StringIO()) as fout:
+            dis(code)
+            rival_speed = timeit(code, number=1000000)
+        rival_asm = len(fout.getvalue().split('\n'))
+        results.append({'title': rival_title,
+                        'text': rival_txt,
+                        '-s': rival_speed,
+                        '-a': rival_asm,
+                        'no-rules': (rival_speed+rival_asm/100)/2})
+        rival_ind += 1
+    results.sort(key=lambda i: i[mode])
+    appndx = ''
+    for i in range(1, len(results)):
+        worther = (results[i][mode]/results[0][mode])*100
+        appndx += f'{' ':<5}place #{i+1} {results[i]['title']}: "{results[i]['text']}" '
+        appndx += f'with the result: {results[i][mode]:.9f} - {worther:.2f}% worther'
+    print(f'The WINNER is {results[0]['title']}: "{results[0]['text']}"',
+          f'with the result: {results[0][mode]:.9f}')
+    print(appndx)
     return 0
+
+
+# def display_results(results):
+#     """Display result of holy-war"""
+#     if len(results) == 0:
+#         print(f'{r"\_()_/":^60}')
+#         print(f'{"Got no results to display":^60}')
+#         return 0
+#     console = Console()
+#     table = Table(title='Final results', title_justify='center', title_style='bold red',
+#                   show_header=True, header_style='blue')
+#     table.add_column(r'Feature\Results')
+#     for _ in results:
+#         table.add_column(_)
+#     console.print(table)
 
 
 def validate_rival(rival):
@@ -72,8 +106,9 @@ def validate_rival(rival):
     error = ''
 
     try:
-        timeit(rival, number=1)
-    except SyntaxError:
+        with redirect_stdout(StringIO()) as _:
+            timeit(rival, number=1)
+    except:
         rival_txt = rival if len(rival) <= 12 else rival[:12] + '...'
         error = f'"{rival_txt}" is not a valid rival code'
     if error == '':
@@ -83,10 +118,11 @@ def validate_rival(rival):
         with open(rival, 'r', encoding='utf-8') as fin:
             pretender = ''.join(fin.readlines())
         try:
-            timeit(pretender, number=1)
+            with redirect_stdout(StringIO()) as _:
+                timeit(pretender, number=1)
             rival = pretender
             error = ''
-        except SyntaxError:
+        except:
             error = f'{error.replace("not", "neither")},' \
                     + ' nor a file with a valid code'
             rival = ''
@@ -114,6 +150,10 @@ def main():
         mode = '-a'
         argv.pop(argv.index('-a'))
 
+    if '--demo' in argv:
+        holywar(['8.2 // 1', 'int(8.2)'])
+        return 0
+
     for arg in argv[1:]:
         rival, error = validate_rival(arg)
         if error:
@@ -129,6 +169,7 @@ def main():
         rivals = rivals[:4]
 
     holywar(rivals, mode=mode)
+    return 0
 
 
 if __name__ == '__main__':
