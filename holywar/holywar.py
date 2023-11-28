@@ -5,7 +5,7 @@ from sys import argv
 import os
 from pathlib import Path
 from io import StringIO
-from contextlib import redirect_stdout
+from contextlib import redirect_stdout, redirect_stderr
 # from rich.console import Console
 # from rich.table import Table
 
@@ -64,9 +64,10 @@ def holywar(rivals, mode='no-rules'):
     for code in rivals:
         rival_txt = code['text']
         rival_title = f'Rival #{rival_ind}'
-        with redirect_stdout(StringIO()) as fout:
-            dis(code['code'])
-            rival_speed = timeit(code['code'], number=1000000)
+        with redirect_stderr(StringIO()) as _:
+            with redirect_stdout(StringIO()) as fout:
+                dis(code['code'])
+                rival_speed = timeit(code['code'], number=1000000)
         rival_asm = len(fout.getvalue().split('\n'))
         results.append({'title': rival_title,
                         'text': rival_txt,
@@ -108,8 +109,9 @@ def validate_rival(rival):
 
     rival_txt = rival if len(rival) <= 12 else rival[:12] + '...'
     try:
-        with redirect_stdout(StringIO()) as _:
-            timeit(rival, number=1)
+        with redirect_stderr(StringIO()) as _:
+            with redirect_stdout(StringIO()) as _:
+                timeit(rival, number=1)
     except:
         error = f'"{rival_txt}" is not a valid rival code'
     if error == '':
