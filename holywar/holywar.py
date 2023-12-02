@@ -6,6 +6,7 @@ import os
 from pathlib import Path
 from io import StringIO
 from contextlib import redirect_stdout, redirect_stderr
+import re
 # from rich.console import Console
 # from rich.table import Table
 
@@ -46,8 +47,8 @@ def usage(error=''):
 
 def demo():
     """Runs demonstration of holy-war with rivals 8.2 // 1 and int(8.2)"""
-    holywar([{'text': '8.2 // 1', 'code': '8.2 // 1'},
-             {'text': 'int(8.2)', 'code': 'int(8.2)'}],
+    holywar([{'text': '8.2 // 1', 'code': '8.2 // 1', 'setup': 'pass'},
+             {'text': 'int(8.2)', 'code': 'int(8.2)', 'setup': 'pass'}],
             mode='no-rules')
 
 
@@ -67,7 +68,7 @@ def holywar(rivals, mode='no-rules'):
         with redirect_stderr(StringIO()) as _:
             with redirect_stdout(StringIO()) as fout:
                 dis(code['code'])
-                rival_speed = timeit(code['code'], number=1000000)
+                rival_speed = timeit(code['code'], setup=code['setup'], number=1000000)
         rival_asm = len(fout.getvalue().split('\n'))
         results.append({'title': rival_title,
                         'text': rival_txt,
@@ -79,27 +80,26 @@ def holywar(rivals, mode='no-rules'):
     appndx = ''
     for i in range(1, len(results)):
         worse = (results[i][mode]/results[0][mode]-1)*100
-        appndx += f'{' ':<5}place #{i+1} {results[i]['title']}: "{results[i]['text']}" '
+        appndx += f'{"":<5}place #{i+1} {results[i]["title"]}: "{results[i]["text"]}" '
         appndx += f'with the result: {results[i][mode]:.9f} - {worse:.2f}% worse'
-    print(f'The WINNER is {results[0]['title']}: "{results[0]['text']}"',
+    print(f'The WINNER is {results[0]["title"]}: "{results[0]["text"]}"',
           f'with the result: {results[0][mode]:.9f}')
     print(appndx)
     return 0
 
 
-# def display_results(results):
-#     """Display result of holy-war"""
-#     if len(results) == 0:
-#         print(f'{r"\_()_/":^60}')
-#         print(f'{"Got no results to display":^60}')
-#         return 0
-#     console = Console()
-#     table = Table(title='Final results', title_justify='center', title_style='bold red',
-#                   show_header=True, header_style='blue')
-#     table.add_column(r'Feature\Results')
-#     for _ in results:
-#         table.add_column(_)
-#     console.print(table)
+def get_setup(rival: str) -> (str, str):
+
+    comment_pattern = r'#.*$'
+    import_pattern = r'\b(?:from [\.\w]+ )?import [\w\., ]+[;$]?'
+
+    rival = re.sub(comment_pattern, '', rival, re.I)
+    setup_ = ('\n'.join(re.findall(import_pattern, rival, re.I))
+              .replace(';', '\n'))
+    rival = re.sub(import_pattern, '', rival, re.I).strip()
+    setup_ = setup_ if setup_ else 'pass'
+
+    return rival, setup_
 
 
 def validate_rival(rival):
@@ -107,33 +107,37 @@ def validate_rival(rival):
     with valid python code"""
     error = ''
 
+    rival, setup_ = get_setup(rival)
     rival_txt = rival if len(rival) <= 12 else rival[:12] + '...'
     try:
         with redirect_stderr(StringIO()) as _:
             with redirect_stdout(StringIO()) as _:
-                timeit(rival, number=1)
+                timeit(rival, setup=setup_, number=1)
     except:
         error = f'"{rival_txt}" is not a valid rival code'
     if error == '':
         rival = {'text': rival_txt,
-                 'code': rival}
+                 'code': rival,
+                 'setup': setup_}
         return rival, error
 
     if Path(rival).is_file():
         rival_txt = Path(rival).name
         with open(rival, 'r', encoding='utf-8') as fin:
             pretender = ''.join(fin.readlines())
+        pretender, setup_ = get_setup(pretender)
         try:
             with redirect_stdout(StringIO()) as _:
-                timeit(pretender, number=1)
+                timeit(pretender, setup=setup_, number=1)
             error = ''
         except:
-            error = f'{error.replace("not", "neither")},' \
-                    + ' nor a file with a valid code'
+            error = (f'{error.replace("not", "neither")},'
+                     + ' nor a file with a valid code')
             rival = ''
 
         rival = {'text': rival_txt,
-                 'code': pretender}
+                 'code': pretender,
+                 'setup': setup_}
 
     return rival, error
 
@@ -161,7 +165,7 @@ def main():
 
     if '--demo' in argv:
         demo()
-        return 0
+        return
 
     for arg in argv[1:]:
         rival, error = validate_rival(arg)
@@ -178,7 +182,6 @@ def main():
         rivals = rivals[:4]
 
     holywar(rivals, mode=mode)
-    return 0
 
 
 if __name__ == '__main__':
