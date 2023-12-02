@@ -7,8 +7,7 @@ from pathlib import Path
 from io import StringIO
 from contextlib import redirect_stdout, redirect_stderr
 import re
-# from rich.console import Console
-# from rich.table import Table
+
 
 def disclaimer():
     """Prints disclaimer"""
