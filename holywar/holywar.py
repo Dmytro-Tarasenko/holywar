@@ -145,6 +145,10 @@ def main():
     """Provides initial args check, prepares parameters and rivals,
     passes them to holy-war"""
     disclaimer()
+    _ = input('Do you want to proceed? [y/N]: ')
+    if _.lower() != 'y':
+        print('Aborted by user!')
+        return
     mode = 'no-rules'
     rivals = []
 
